@@ -1,0 +1,17 @@
+services:
+  planto:
+    image: ghcr.io/dcnoren/planto:latest
+    ports:
+      - "3456:8000"
+    volumes:
+      - planto-data:/app/data
+    environment:
+      - CALENDAR_MODE=${CALENDAR_MODE:-local}
+      - GOOGLE_CALENDAR_ID=${GOOGLE_CALENDAR_ID:-primary}
+      - GOOGLE_SERVICE_ACCOUNT_KEY=/app/credentials.json
+      - PTO_CONFIG_PATH=/app/config/pto-config.json
+      - LOCAL_DB_PATH=/app/data/planto.db
+    restart: unless-stopped
+
+volumes:
+  planto-data:

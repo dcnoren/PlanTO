@@ -1,0 +1,19 @@
+services:
+  planto:
+    build: .
+    ports:
+      - "3456:8000"
+    env_file:
+      - .env
+    volumes:
+      - planto-data:/app/data
+      - ${GOOGLE_SERVICE_ACCOUNT_KEY:-/dev/null}:/app/credentials.json:ro
+    environment:
+      - CALENDAR_MODE=${CALENDAR_MODE:-local}
+      - GOOGLE_SERVICE_ACCOUNT_KEY=/app/credentials.json
+      - GOOGLE_CALENDAR_ID=${GOOGLE_CALENDAR_ID:-primary}
+      - PTO_CONFIG_PATH=/app/config/pto-config.json
+      - LOCAL_DB_PATH=/app/data/planto.db
+
+volumes:
+  planto-data:

@@ -1,0 +1,1559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PlanTO — PTO Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --pto: #2e6b9e;
+      --pto-light: #dceaf5;
+      --pto-glow: rgba(46, 107, 158, 0.35);
+      --float: #5a8a6a;
+      --float-light: #ddeee3;
+      --float-glow: rgba(90, 138, 106, 0.35);
+      --holiday: #b5564e;
+      --holiday-light: #f5ddd9;
+      --holiday-glow: rgba(181, 86, 78, 0.35);
+
+      --sidebar-bg: #1a1a1f;
+      --sidebar-surface: rgba(255, 255, 255, 0.04);
+      --sidebar-border: rgba(255, 255, 255, 0.06);
+      --sidebar-text: #e8e4df;
+      --sidebar-muted: #8a8580;
+
+      --cal-bg: #faf8f5;
+      --cal-surface: #ffffff;
+      --cal-border: #ebe7e1;
+      --cal-text: #2c2825;
+      --cal-muted: #9a9590;
+      --cal-hover: #f3f0ec;
+
+      --accent: #c4915c;
+      --accent-light: #f5ead9;
+
+      --radius: 10px;
+      --radius-sm: 6px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+
+      --font-display: 'Cormorant Garamond', Georgia, serif;
+      --font-body: 'DM Sans', system-ui, sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--cal-bg);
+      color: var(--cal-text);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ─── Sidebar (desktop) ──────────────────── */
+    #sidebar {
+      width: 300px;
+      min-width: 300px;
+      background: var(--sidebar-bg);
+      padding: 0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      z-index: 10;
+    }
+
+    #sidebar::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; bottom: 0;
+      width: 1px;
+      background: linear-gradient(to bottom, transparent, rgba(196, 145, 92, 0.2), transparent);
+    }
+
+    #sidebar::-webkit-scrollbar { width: 4px; }
+    #sidebar::-webkit-scrollbar-track { background: transparent; }
+    #sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+    .sidebar-header {
+      padding: 32px 28px 24px;
+      border-bottom: 1px solid var(--sidebar-border);
+    }
+
+    .sidebar-header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .logo {
+      font-family: var(--font-display);
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--sidebar-text);
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+
+    .logo span { color: var(--accent); font-style: italic; }
+
+    .settings-btn {
+      background: none;
+      border: 1px solid var(--sidebar-border);
+      color: var(--sidebar-muted);
+      border-radius: var(--radius-sm);
+      width: 34px;
+      height: 34px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s, border-color 0.2s, transform 0.2s;
+      flex-shrink: 0;
+    }
+
+    .settings-btn:hover {
+      color: var(--sidebar-text);
+      border-color: var(--sidebar-muted);
+      transform: rotate(30deg);
+    }
+
+    .year-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .year-selector select {
+      appearance: none;
+      background: var(--sidebar-surface);
+      border: 1px solid var(--sidebar-border);
+      color: var(--accent);
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      font-weight: 700;
+      padding: 4px 28px 4px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: border-color 0.2s;
+      background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%238a8580' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+    }
+
+    .year-selector select:hover { border-color: var(--accent); }
+    .year-selector select:focus { outline: none; border-color: var(--accent); }
+    .year-selector select option { background: var(--sidebar-bg); color: var(--sidebar-text); }
+
+    .year-nav-btn {
+      background: none;
+      border: 1px solid var(--sidebar-border);
+      color: var(--sidebar-muted);
+      border-radius: var(--radius-sm);
+      width: 28px;
+      height: 28px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s, border-color 0.2s;
+      flex-shrink: 0;
+    }
+
+    .year-nav-btn:hover { color: var(--sidebar-text); border-color: var(--sidebar-muted); }
+    .year-nav-btn:disabled { opacity: 0.3; cursor: default; }
+
+    .sidebar-subtitle {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--sidebar-muted);
+      margin-top: 4px;
+    }
+
+    .sidebar-body {
+      padding: 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      flex: 1;
+    }
+
+    /* ─── Pools ────────────────────────────────── */
+    .pool {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      animation: poolReveal 0.6s ease-out both;
+    }
+
+    .pool:nth-child(1) { animation-delay: 0.1s; }
+    .pool:nth-child(2) { animation-delay: 0.2s; }
+    .pool:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes poolReveal {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .pool-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .pool-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--sidebar-muted);
+    }
+
+    .pool-count {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      min-width: 28px;
+      text-align: center;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s;
+    }
+
+    .pool-count.pto { color: var(--pto); }
+    .pool-count.floating { color: var(--float); }
+    .pool-count.holiday { color: var(--holiday); }
+    .pool-count.bump { transform: scale(1.3); }
+
+    .chip-container { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    /* ─── Chips ────────────────────────────────── */
+    .chip {
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: #fff;
+      cursor: grab;
+      user-select: none;
+      white-space: nowrap;
+      position: relative;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  box-shadow 0.2s ease,
+                  opacity 0.2s;
+      animation: chipIn 0.35s ease-out both;
+    }
+
+    @keyframes chipIn {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .chip:hover { transform: translateY(-2px) scale(1.04); }
+    .chip:active { cursor: grabbing; transform: scale(0.96); }
+
+    .chip.pto { background: var(--pto); box-shadow: 0 2px 8px var(--pto-glow); }
+    .chip.pto:hover { box-shadow: 0 4px 16px var(--pto-glow); }
+    .chip.floating { background: var(--float); box-shadow: 0 2px 8px var(--float-glow); }
+    .chip.floating:hover { box-shadow: 0 4px 16px var(--float-glow); }
+    .chip.holiday { background: var(--holiday); box-shadow: 0 2px 8px var(--holiday-glow); }
+    .chip.holiday:hover { box-shadow: 0 4px 16px var(--holiday-glow); }
+
+    /* ─── Sidebar footer ──────────────────────── */
+    .sidebar-footer {
+      padding: 20px 28px;
+      border-top: 1px solid var(--sidebar-border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mode-badge {
+      font-size: 0.6rem; font-weight: 600; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--sidebar-muted);
+      padding: 4px 10px; border: 1px solid var(--sidebar-border); border-radius: 20px;
+    }
+
+    .mode-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--float); animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+    .legend {
+      display: flex; gap: 20px; flex-wrap: wrap;
+      margin-top: auto; padding-top: 20px;
+    }
+
+    .legend-item {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.65rem; font-weight: 500;
+      color: var(--sidebar-muted); letter-spacing: 0.03em;
+    }
+
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .legend-dot.pto { background: var(--pto); }
+    .legend-dot.floating { background: var(--float); }
+    .legend-dot.holiday { background: var(--holiday); }
+
+    /* ─── Calendar area ───────────────────────── */
+    #calendar-wrap {
+      flex: 1;
+      padding: 32px 40px;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    #calendar-wrap::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 300px; right: 0; bottom: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #calendar {
+      max-width: 1100px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+      animation: calendarReveal 0.8s ease-out 0.2s both;
+    }
+
+    @keyframes calendarReveal {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── FullCalendar overrides ──────────────── */
+    .fc {
+      --fc-border-color: var(--cal-border);
+      --fc-today-bg-color: var(--accent-light);
+      --fc-neutral-bg-color: var(--cal-surface);
+      --fc-page-bg-color: transparent;
+      font-family: var(--font-body);
+    }
+
+    .fc .fc-toolbar { margin-bottom: 24px !important; }
+
+    .fc .fc-toolbar-title {
+      font-family: var(--font-display) !important;
+      font-size: 1.8rem !important;
+      font-weight: 600 !important;
+      color: var(--cal-text) !important;
+      letter-spacing: -0.01em;
+    }
+
+    .fc .fc-button {
+      background: var(--cal-surface) !important;
+      border: 1px solid var(--cal-border) !important;
+      color: var(--cal-text) !important;
+      border-radius: var(--radius-sm) !important;
+      font-family: var(--font-body) !important;
+      font-size: 0.75rem !important;
+      font-weight: 500 !important;
+      padding: 8px 16px !important;
+      transition: all 0.15s ease !important;
+      box-shadow: var(--shadow-sm) !important;
+    }
+
+    .fc .fc-button:hover { background: var(--cal-hover) !important; border-color: var(--cal-muted) !important; }
+    .fc .fc-button-active, .fc .fc-button:active { background: var(--cal-text) !important; color: var(--cal-surface) !important; border-color: var(--cal-text) !important; }
+    .fc .fc-button:focus { box-shadow: 0 0 0 2px var(--accent-light) !important; }
+
+    .fc .fc-button-group > .fc-button { border-radius: 0 !important; }
+    .fc .fc-button-group > .fc-button:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm) !important; }
+    .fc .fc-button-group > .fc-button:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0 !important; }
+
+    .fc .fc-col-header-cell {
+      padding: 12px 0 !important;
+      font-size: 0.7rem; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--cal-muted);
+      border-bottom: 2px solid var(--cal-border) !important;
+      background: transparent !important;
+    }
+
+    .fc .fc-col-header-cell-cushion { color: var(--cal-muted) !important; text-decoration: none !important; }
+
+    .fc .fc-scrollgrid {
+      border: 1px solid var(--cal-border) !important;
+      border-radius: var(--radius) !important;
+      overflow: hidden;
+      background: var(--cal-surface);
+      box-shadow: var(--shadow-md);
+    }
+
+    .fc .fc-scrollgrid td, .fc .fc-scrollgrid th { border-color: var(--cal-border) !important; }
+    .fc .fc-daygrid-day { cursor: default; transition: background 0.15s ease; min-height: 90px !important; }
+    .fc .fc-daygrid-day:hover { background: var(--cal-hover); }
+    .fc .fc-daygrid-day.fc-day-today { background: var(--accent-light) !important; }
+    .fc .fc-daygrid-day-number { font-size: 0.8rem !important; font-weight: 500 !important; color: var(--cal-text) !important; padding: 8px 10px !important; text-decoration: none !important; }
+
+    .fc .fc-day-today .fc-daygrid-day-number {
+      background: var(--accent); color: #fff !important; border-radius: 50%;
+      width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+      padding: 0 !important; margin: 6px 0 0 6px; font-weight: 600 !important;
+    }
+
+    .fc .fc-daygrid-day-top { flex-direction: row !important; }
+    .fc .fc-day-other .fc-daygrid-day-number { color: var(--cal-muted) !important; opacity: 0.5; }
+
+    .fc-event {
+      border: none !important; border-radius: var(--radius-sm) !important;
+      padding: 3px 8px !important; font-size: 0.7rem !important; font-weight: 600 !important;
+      letter-spacing: 0.01em !important; cursor: pointer !important;
+      transition: transform 0.15s ease, box-shadow 0.15s ease !important; margin: 1px 4px !important;
+    }
+
+    .fc-event:hover { transform: scale(1.02); }
+    .event-pto { background-color: var(--pto) !important; box-shadow: 0 1px 4px var(--pto-glow); }
+    .event-floating { background-color: var(--float) !important; box-shadow: 0 1px 4px var(--float-glow); }
+    .event-holiday { background-color: var(--holiday) !important; box-shadow: 0 1px 4px var(--holiday-glow); }
+
+    .fc .fc-daygrid-day.drop-target { background: var(--accent-light) !important; box-shadow: inset 0 0 0 2px var(--accent); }
+
+    /* ─── Status toast ────────────────────────── */
+    #status {
+      position: fixed; bottom: 24px; right: 24px; padding: 12px 20px;
+      border-radius: var(--radius); font-size: 0.8rem; font-weight: 500;
+      display: none; z-index: 100; animation: toastIn 0.3s ease-out;
+      box-shadow: var(--shadow-lg); max-width: 400px;
+    }
+
+    @keyframes toastIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    #status.info { background: var(--cal-surface); color: var(--cal-text); border: 1px solid var(--cal-border); }
+    #status.error { background: var(--holiday-light); color: var(--holiday); border: 1px solid rgba(181, 86, 78, 0.2); }
+
+    /* ─── Mobile header (hidden on desktop) ───── */
+    #mobile-header {
+      display: none;
+    }
+
+    /* ─── Mobile pools (hidden on desktop) ────── */
+    #mobile-pools {
+      display: none;
+    }
+
+    /* ═══════════════════════════════════════════
+       MOBILE LAYOUT
+       ═══════════════════════════════════════════ */
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      /* Hide desktop sidebar entirely */
+      #sidebar { display: none !important; }
+
+      /* ─── Mobile top bar ──────────────────── */
+      #mobile-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: var(--sidebar-bg);
+        z-index: 20;
+        flex-shrink: 0;
+        gap: 12px;
+      }
+
+      .m-logo {
+        font-family: var(--font-display);
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--sidebar-text);
+        letter-spacing: -0.02em;
+        line-height: 1;
+        flex-shrink: 0;
+      }
+
+      .m-logo span { color: var(--accent); font-style: italic; }
+
+      .m-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .m-year-selector {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .m-year-selector select {
+        appearance: none;
+        background: var(--sidebar-surface);
+        border: 1px solid var(--sidebar-border);
+        color: var(--accent);
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        font-weight: 700;
+        padding: 4px 24px 4px 10px;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%238a8580' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+      }
+
+      .m-year-selector select option {
+        background: var(--sidebar-bg);
+        color: var(--sidebar-text);
+      }
+
+      .m-year-btn {
+        background: none;
+        border: 1px solid var(--sidebar-border);
+        color: var(--sidebar-muted);
+        border-radius: var(--radius-sm);
+        width: 28px; height: 28px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .m-year-btn:disabled { opacity: 0.3; }
+
+      .m-settings-btn {
+        background: none;
+        border: 1px solid var(--sidebar-border);
+        color: var(--sidebar-muted);
+        border-radius: var(--radius-sm);
+        width: 34px; height: 34px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      /* ─── Scrollable main area ─────────── */
+      #calendar-wrap {
+        flex: 1;
+        padding: 16px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+
+      #calendar-wrap::before { left: 0; top: 0; }
+
+      #calendar {
+        flex-shrink: 0;
+      }
+
+      .fc .fc-toolbar-title { font-size: 1.2rem !important; }
+      .fc .fc-button { padding: 6px 10px !important; font-size: 0.7rem !important; }
+      .fc .fc-daygrid-day { min-height: 52px !important; }
+      .fc .fc-daygrid-day-number { font-size: 0.7rem !important; padding: 4px 6px !important; }
+      .fc .fc-day-today .fc-daygrid-day-number { width: 22px; height: 22px; margin: 4px 0 0 4px; font-size: 0.65rem !important; }
+      .fc-event { font-size: 0.6rem !important; padding: 2px 4px !important; margin: 1px 2px !important; }
+      .fc .fc-col-header-cell { padding: 8px 0 !important; font-size: 0.6rem; }
+
+      /* ─── Mobile chip pools ────────────── */
+      #mobile-pools {
+        display: block;
+        flex-shrink: 0;
+        background: var(--sidebar-bg);
+        border-radius: 20px 20px 0 0;
+        padding: 20px 16px 28px;
+        margin-top: 16px;
+        position: relative;
+      }
+
+      /* Drag handle decoration */
+      #mobile-pools::before {
+        content: '';
+        display: block;
+        width: 36px;
+        height: 4px;
+        background: rgba(255,255,255,0.12);
+        border-radius: 2px;
+        margin: 0 auto 16px;
+      }
+
+      .m-pools-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .m-pool {
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 12px;
+        padding: 14px 16px;
+        position: relative;
+        overflow: hidden;
+        animation: poolReveal 0.5s ease-out both;
+      }
+
+      .m-pool:nth-child(1) { animation-delay: 0.05s; }
+      .m-pool:nth-child(2) { animation-delay: 0.1s; }
+      .m-pool:nth-child(3) { animation-delay: 0.15s; }
+
+      /* Colored accent stripe on top */
+      .m-pool::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        border-radius: 12px 12px 0 0;
+      }
+
+      .m-pool.m-pool-pto::before { background: var(--pto); }
+      .m-pool.m-pool-floating::before { background: var(--float); }
+      .m-pool.m-pool-holiday::before { background: var(--holiday); }
+
+      .m-pool-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .m-pool-label {
+        font-size: 0.6rem;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--sidebar-muted);
+      }
+
+      .m-pool-count {
+        font-family: var(--font-display);
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      .m-pool-count.pto { color: var(--pto); }
+      .m-pool-count.floating { color: var(--float); }
+      .m-pool-count.holiday { color: var(--holiday); }
+
+      .m-chip-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        min-height: 28px;
+      }
+
+      /* Slightly smaller chips on mobile */
+      .m-chip-container .chip {
+        padding: 4px 12px;
+        font-size: 0.65rem;
+      }
+
+      /* Empty pool hint */
+      .m-pool-empty {
+        font-size: 0.65rem;
+        color: rgba(255,255,255,0.15);
+        font-style: italic;
+        display: none;
+      }
+
+      .m-chip-container:empty + .m-pool-empty {
+        display: block;
+      }
+
+      /* Toast repositioned above mobile pools */
+      #status {
+        bottom: auto;
+        top: 70px;
+        right: 16px;
+        left: 16px;
+        max-width: none;
+      }
+    }
+
+    /* ─── Touch drag ghost ────────────────────── */
+    .touch-ghost {
+      position: fixed;
+      z-index: 9999;
+      pointer-events: none;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-family: var(--font-body);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: #fff;
+      white-space: nowrap;
+      opacity: 0.9;
+      transform: translate(-50%, -50%) scale(1.1);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      transition: transform 0.1s ease;
+    }
+
+    .touch-ghost.pto { background: var(--pto); }
+    .touch-ghost.floating { background: var(--float); }
+    .touch-ghost.holiday { background: var(--holiday); }
+
+    /* ─── Settings Modal ──────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px);
+      z-index: 2000; align-items: center; justify-content: center;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--cal-surface); border-radius: 16px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.15), 0 8px 24px rgba(0,0,0,0.08);
+      width: 520px; max-width: 92vw; max-height: 85vh;
+      overflow-y: auto; animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.92) translateY(12px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal::-webkit-scrollbar { width: 6px; }
+    .modal::-webkit-scrollbar-track { background: transparent; }
+    .modal::-webkit-scrollbar-thumb { background: var(--cal-border); border-radius: 3px; }
+
+    .modal-header {
+      padding: 28px 32px 20px; border-bottom: 1px solid var(--cal-border);
+      display: flex; justify-content: space-between; align-items: center;
+      position: sticky; top: 0; background: var(--cal-surface); z-index: 1;
+      border-radius: 16px 16px 0 0;
+    }
+
+    .modal-title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; color: var(--cal-text); }
+
+    .modal-close {
+      background: none; border: 1px solid var(--cal-border); color: var(--cal-muted);
+      border-radius: var(--radius-sm); width: 34px; height: 34px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s; font-size: 1.1rem;
+    }
+    .modal-close:hover { color: var(--cal-text); border-color: var(--cal-muted); }
+
+    .modal-body { padding: 24px 32px 32px; }
+
+    .form-section { margin-bottom: 28px; }
+    .form-section:last-child { margin-bottom: 0; }
+
+    .form-section-label {
+      font-size: 0.65rem; font-weight: 600; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--cal-muted); margin-bottom: 12px;
+    }
+
+    .form-row { display: flex; gap: 16px; }
+
+    .form-group { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 0.75rem; font-weight: 500; color: var(--cal-text); }
+
+    .form-group input[type="number"],
+    .form-group input[type="text"],
+    .form-group input[type="date"] {
+      padding: 8px 12px; border: 1px solid var(--cal-border);
+      border-radius: var(--radius-sm); font-family: var(--font-body);
+      font-size: 0.85rem; color: var(--cal-text); background: var(--cal-bg);
+      transition: border-color 0.15s; width: 100%;
+    }
+
+    .form-group input:focus { outline: none; border-color: var(--accent); }
+    .form-group input[type="number"] { width: 80px; }
+
+    .holiday-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .holiday-row {
+      display: flex; align-items: center; gap: 10px;
+      animation: chipIn 0.25s ease-out both;
+    }
+
+    .holiday-row input[type="text"] { flex: 1; }
+    .holiday-row input[type="date"] { width: 150px; flex-shrink: 0; }
+
+    .holiday-remove {
+      background: none; border: none; color: var(--cal-muted); cursor: pointer;
+      padding: 4px; border-radius: 4px; transition: color 0.15s;
+      flex-shrink: 0; font-size: 1.1rem; line-height: 1;
+    }
+    .holiday-remove:hover { color: var(--holiday); }
+
+    .holiday-add {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: none; border: 1px dashed var(--cal-border); color: var(--cal-muted);
+      font-family: var(--font-body); font-size: 0.75rem; font-weight: 500;
+      padding: 8px 14px; border-radius: var(--radius-sm); cursor: pointer;
+      transition: color 0.15s, border-color 0.15s; margin-top: 4px;
+    }
+    .holiday-add:hover { color: var(--accent); border-color: var(--accent); }
+
+    .modal-footer {
+      padding: 20px 32px; border-top: 1px solid var(--cal-border);
+      display: flex; justify-content: flex-end; gap: 10px;
+      position: sticky; bottom: 0; background: var(--cal-surface);
+      border-radius: 0 0 16px 16px;
+    }
+
+    .btn {
+      padding: 9px 20px; border-radius: var(--radius-sm);
+      font-family: var(--font-body); font-size: 0.8rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s; border: none;
+    }
+
+    .btn-secondary { background: var(--cal-bg); color: var(--cal-text); border: 1px solid var(--cal-border); }
+    .btn-secondary:hover { background: var(--cal-hover); }
+
+    .btn-primary { background: var(--cal-text); color: var(--cal-surface); }
+    .btn-primary:hover { background: #1a1715; }
+  </style>
+</head>
+<body>
+
+<!-- ═══ Mobile top bar ═══ -->
+<div id="mobile-header">
+  <div class="m-logo">Plan<span>TO</span></div>
+  <div class="m-controls">
+    <div class="m-year-selector">
+      <button class="m-year-btn" id="m-year-prev" onclick="changeYear(-1)">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7.5 2.5L4 6l3.5 3.5"/></svg>
+      </button>
+      <select id="m-year-select" onchange="setYear(parseInt(this.value))"></select>
+      <button class="m-year-btn" id="m-year-next" onclick="changeYear(1)">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg>
+      </button>
+    </div>
+    <button class="m-settings-btn" onclick="openSettings()">
+      <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="9" cy="9" r="2.5"/>
+        <path d="M7.6 2.5l-.3 1.1a.8.8 0 01-1.1.5L5.1 3.6l-1 1.8 1 .8a.8.8 0 010 1.2l-1 .8 1 1.8 1.1-.5a.8.8 0 011.1.5l.3 1.1h2l.3-1.1a.8.8 0 011.1-.5l1.1.5 1-1.8-1-.8a.8.8 0 010-1.2l1-.8-1-1.8-1.1.5a.8.8 0 01-1.1-.5L9.6 2.5z"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- ═══ Desktop sidebar ═══ -->
+<div id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-header-top">
+      <div class="logo">Plan<span>TO</span></div>
+      <button class="settings-btn" onclick="openSettings()" title="Settings">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="9" r="2.5"/>
+          <path d="M7.6 2.5l-.3 1.1a.8.8 0 01-1.1.5L5.1 3.6l-1 1.8 1 .8a.8.8 0 010 1.2l-1 .8 1 1.8 1.1-.5a.8.8 0 011.1.5l.3 1.1h2l.3-1.1a.8.8 0 011.1-.5l1.1.5 1-1.8-1-.8a.8.8 0 010-1.2l1-.8-1-1.8-1.1.5a.8.8 0 01-1.1-.5L9.6 2.5z"/>
+        </svg>
+      </button>
+    </div>
+    <div class="year-selector">
+      <button class="year-nav-btn" id="year-prev" onclick="changeYear(-1)">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 2.5L4 6l3.5 3.5"/></svg>
+      </button>
+      <select id="year-select" onchange="setYear(parseInt(this.value))"></select>
+      <button class="year-nav-btn" id="year-next" onclick="changeYear(1)">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg>
+      </button>
+    </div>
+    <div class="sidebar-subtitle">Time-off planner</div>
+  </div>
+
+  <div class="sidebar-body">
+    <div class="pool" id="pool-pto">
+      <div class="pool-header">
+        <span class="pool-label">PTO Days</span>
+        <span class="pool-count pto" id="count-pto">0</span>
+      </div>
+      <div class="chip-container" id="chips-pto"></div>
+    </div>
+
+    <div class="pool" id="pool-floating">
+      <div class="pool-header">
+        <span class="pool-label">Floating Holidays</span>
+        <span class="pool-count floating" id="count-floating">0</span>
+      </div>
+      <div class="chip-container" id="chips-floating"></div>
+    </div>
+
+    <div class="pool" id="pool-holiday">
+      <div class="pool-header">
+        <span class="pool-label">Company Holidays</span>
+        <span class="pool-count holiday" id="count-holiday">0</span>
+      </div>
+      <div class="chip-container" id="chips-holiday"></div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><span class="legend-dot pto"></span> Vacation</div>
+      <div class="legend-item"><span class="legend-dot floating"></span> Floating</div>
+      <div class="legend-item"><span class="legend-dot holiday"></span> Company</div>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <span class="mode-dot"></span>
+    <span class="mode-badge" id="mode-label">Local</span>
+  </div>
+</div>
+
+<!-- ═══ Calendar + mobile pools ═══ -->
+<div id="calendar-wrap">
+  <div id="calendar"></div>
+
+  <!-- Mobile chip pools (below calendar, inside scroll area) -->
+  <div id="mobile-pools">
+    <div class="m-pools-grid">
+      <div class="m-pool m-pool-pto">
+        <div class="m-pool-header">
+          <span class="m-pool-label">PTO Days</span>
+          <span class="m-pool-count pto" id="m-count-pto">0</span>
+        </div>
+        <div class="m-chip-container" id="m-chips-pto"></div>
+        <div class="m-pool-empty">All scheduled</div>
+      </div>
+      <div class="m-pool m-pool-floating">
+        <div class="m-pool-header">
+          <span class="m-pool-label">Floating Holidays</span>
+          <span class="m-pool-count floating" id="m-count-floating">0</span>
+        </div>
+        <div class="m-chip-container" id="m-chips-floating"></div>
+        <div class="m-pool-empty">All scheduled</div>
+      </div>
+      <div class="m-pool m-pool-holiday">
+        <div class="m-pool-header">
+          <span class="m-pool-label">Company Holidays</span>
+          <span class="m-pool-count holiday" id="m-count-holiday">0</span>
+        </div>
+        <div class="m-chip-container" id="m-chips-holiday"></div>
+        <div class="m-pool-empty">All scheduled</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="status"></div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Settings</span>
+      <button class="modal-close" onclick="closeSettings()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-section">
+        <div class="form-section-label">Day Allocations</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cfg-pto">PTO Days</label>
+            <input type="number" id="cfg-pto" min="0" max="365">
+          </div>
+          <div class="form-group">
+            <label for="cfg-float">Floating Holidays</label>
+            <input type="number" id="cfg-float" min="0" max="365">
+          </div>
+        </div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-label">Company Holidays</div>
+        <div class="holiday-list" id="holiday-list"></div>
+        <button class="holiday-add" onclick="addHolidayRow()">+ Add holiday</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+<script>
+(function() {
+  const API = window.location.origin;
+  let calendar;
+  let config = null;
+  let sidebarChips = [];
+  let calendarEvents = {};
+  let lastDropTarget = null;
+
+  const isMobile = () => window.innerWidth <= 768;
+
+  window.openSettings = openSettings;
+  window.closeSettings = closeSettings;
+  window.saveSettings = saveSettings;
+  window.addHolidayRow = addHolidayRow;
+  window.removeHolidayRow = removeHolidayRow;
+  window.changeYear = changeYear;
+  window.setYear = setYear;
+
+  // ─── API ───────────────────────────────────
+  async function apiCall(method, path, body) {
+    const opts = { method, headers: { 'Content-Type': 'application/json' } };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(`${API}${path}`, opts);
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || res.statusText);
+    }
+    return res.json();
+  }
+
+  function showStatus(msg, isError) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = isError ? 'error' : 'info';
+    el.style.display = 'block';
+    el.style.animation = 'none';
+    el.offsetHeight;
+    el.style.animation = '';
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => el.style.display = 'none', 4000);
+  }
+
+  // ─── Container helpers (desktop vs mobile) ──
+  function getChipContainer(type) {
+    if (isMobile()) return document.getElementById(`m-chips-${type}`);
+    return document.getElementById(`chips-${type}`);
+  }
+
+  function updateCounts() {
+    const counts = { pto: 0, floating: 0, holiday: 0 };
+    for (const c of sidebarChips) counts[c.type]++;
+    for (const [type, count] of Object.entries(counts)) {
+      // Update both desktop and mobile count elements
+      const desktop = document.getElementById(`count-${type}`);
+      const mobile = document.getElementById(`m-count-${type}`);
+      if (desktop) desktop.textContent = count;
+      if (mobile) mobile.textContent = count;
+    }
+  }
+
+  function bumpCount(type) {
+    const ids = [`count-${type}`, `m-count-${type}`];
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.add('bump');
+        setTimeout(() => el.classList.remove('bump'), 300);
+      }
+    }
+  }
+
+  // ─── Year management ──────────────────────
+  function buildYearSelect() {
+    const selectors = [document.getElementById('year-select'), document.getElementById('m-year-select')];
+    for (const sel of selectors) {
+      sel.innerHTML = '';
+      for (let y = config.min_year; y <= config.max_year; y++) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y;
+        if (y === config.year) opt.selected = true;
+        sel.appendChild(opt);
+      }
+    }
+    updateYearNavButtons();
+  }
+
+  function updateYearNavButtons() {
+    const atMin = config.year <= config.min_year;
+    const atMax = config.year >= config.max_year;
+    document.getElementById('year-prev').disabled = atMin;
+    document.getElementById('year-next').disabled = atMax;
+    document.getElementById('m-year-prev').disabled = atMin;
+    document.getElementById('m-year-next').disabled = atMax;
+  }
+
+  async function setYear(year) {
+    if (year === config.year) return;
+    try {
+      config = await apiCall('PUT', '/config', { year });
+      document.getElementById('year-select').value = year;
+      document.getElementById('m-year-select').value = year;
+      updateYearNavButtons();
+      await reloadAll();
+    } catch (err) {
+      showStatus('Failed to change year: ' + err.message, true);
+    }
+  }
+
+  function changeYear(delta) {
+    const newYear = config.year + delta;
+    if (newYear >= config.min_year && newYear <= config.max_year) setYear(newYear);
+  }
+
+  // ─── Settings modal ──────────────────────
+  function openSettings() {
+    document.getElementById('cfg-pto').value = config.pto_days;
+    document.getElementById('cfg-float').value = config.floating_holidays;
+
+    const list = document.getElementById('holiday-list');
+    list.innerHTML = '';
+    const holidays = [...(config.company_holidays_raw || config.company_holidays || [])];
+    holidays.sort((a, b) => a.date.localeCompare(b.date));
+    for (const h of holidays) {
+      appendHolidayRow(h.name, h.date);
+    }
+    document.getElementById('settings-modal').classList.add('open');
+  }
+
+  function closeSettings() {
+    document.getElementById('settings-modal').classList.remove('open');
+  }
+
+  function appendHolidayRow(name, dateMMDD) {
+    const list = document.getElementById('holiday-list');
+    const row = document.createElement('div');
+    row.className = 'holiday-row';
+    const dateVal = dateMMDD.length === 5 ? `${config.year}-${dateMMDD}` : dateMMDD;
+    row.innerHTML = `
+      <input type="text" placeholder="Holiday name" value="${escapeHtml(name)}">
+      <input type="date" value="${dateVal}">
+      <button class="holiday-remove" onclick="removeHolidayRow(this)" title="Remove">&times;</button>
+    `;
+    list.appendChild(row);
+  }
+
+  function addHolidayRow() { appendHolidayRow('', ''); }
+
+  function removeHolidayRow(btn) {
+    const row = btn.closest('.holiday-row');
+    row.style.opacity = '0';
+    row.style.transform = 'scale(0.95)';
+    setTimeout(() => row.remove(), 150);
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  async function saveSettings() {
+    const ptoDays = parseInt(document.getElementById('cfg-pto').value) || 0;
+    const floatDays = parseInt(document.getElementById('cfg-float').value) || 0;
+
+    const rows = document.querySelectorAll('#holiday-list .holiday-row');
+    const holidays = [];
+    for (const row of rows) {
+      const name = row.querySelector('input[type="text"]').value.trim();
+      const dateVal = row.querySelector('input[type="date"]').value;
+      if (!name || !dateVal) continue;
+      holidays.push({ name, date: dateVal.slice(5) });
+    }
+
+    try {
+      config = await apiCall('PUT', '/config', {
+        pto_days: ptoDays,
+        floating_holidays: floatDays,
+        company_holidays: holidays,
+      });
+      closeSettings();
+      await reloadAll();
+      showStatus('Settings saved', false);
+    } catch (err) {
+      showStatus('Failed to save settings: ' + err.message, true);
+    }
+  }
+
+  // ─── Chip & event helpers ─────────────────
+  function getEventClass(title) {
+    if (title === 'PTO') return 'event-pto';
+    if (title === 'Floating Holiday') return 'event-floating';
+    return 'event-holiday';
+  }
+
+  function getChipClass(type) {
+    if (type === 'pto') return 'pto';
+    if (type === 'floating') return 'floating';
+    return 'holiday';
+  }
+
+  // ─── Touch drag state ──────────────────────
+  let touchDragData = null;
+  let touchGhost = null;
+
+  function createTouchGhost(type, label) {
+    const ghost = document.createElement('div');
+    ghost.className = `touch-ghost ${getChipClass(type)}`;
+    ghost.textContent = label;
+    document.body.appendChild(ghost);
+    return ghost;
+  }
+
+  function handleTouchStart(e, type, label, chipEl) {
+    // Short delay to distinguish scroll from drag
+    const touch = e.touches[0];
+    const startX = touch.clientX;
+    const startY = touch.clientY;
+    let moved = false;
+
+    const onMove = (ev) => {
+      const t = ev.touches[0];
+      const dx = t.clientX - startX;
+      const dy = t.clientY - startY;
+
+      if (!moved && Math.abs(dx) + Math.abs(dy) < 10) return;
+
+      if (!moved) {
+        moved = true;
+        touchDragData = { type, label, chipEl };
+        chipEl.style.opacity = '0.4';
+        touchGhost = createTouchGhost(type, label);
+      }
+
+      ev.preventDefault();
+      touchGhost.style.left = t.clientX + 'px';
+      touchGhost.style.top = t.clientY + 'px';
+
+      // Highlight drop target
+      const elemBelow = document.elementFromPoint(t.clientX, t.clientY);
+      const dateCell = elemBelow ? elemBelow.closest('[data-date]') : null;
+      clearDropTarget();
+      if (dateCell) {
+        dateCell.classList.add('drop-target');
+        lastDropTarget = dateCell;
+
+        // Auto-scroll calendar if near edges
+        const wrap = document.getElementById('calendar-wrap');
+        const rect = wrap.getBoundingClientRect();
+        if (t.clientY < rect.top + 60) {
+          wrap.scrollBy(0, -8);
+        } else if (t.clientY > rect.bottom - 60) {
+          wrap.scrollBy(0, 8);
+        }
+      }
+    };
+
+    const onEnd = (ev) => {
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+      document.removeEventListener('touchcancel', onEnd);
+
+      if (!moved) return;
+
+      if (touchGhost) {
+        touchGhost.remove();
+        touchGhost = null;
+      }
+
+      chipEl.style.opacity = '1';
+      clearDropTarget();
+
+      // Find the date cell at the drop point
+      const t = ev.changedTouches[0];
+      const elemBelow = document.elementFromPoint(t.clientX, t.clientY);
+      const dateCell = elemBelow ? elemBelow.closest('[data-date]') : null;
+
+      if (dateCell && touchDragData) {
+        const date = dateCell.getAttribute('data-date');
+        if (date) {
+          executeDrop(touchDragData.type, touchDragData.label, date);
+        }
+      }
+
+      touchDragData = null;
+    };
+
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onEnd);
+    document.addEventListener('touchcancel', onEnd);
+  }
+
+  async function executeDrop(type, label, date) {
+    removeChipFromSidebar(type, label);
+
+    const tempId = 'temp-' + Date.now();
+    calendar.addEvent({ id: tempId, title: label, start: date, allDay: true, classNames: [getEventClass(label)], editable: true });
+
+    try {
+      const result = await apiCall('POST', '/events', { title: label, date });
+      const tempEvent = calendar.getEventById(tempId);
+      if (tempEvent) tempEvent.remove();
+      calendar.addEvent({ id: result.id, title: label, start: date, allDay: true, classNames: [getEventClass(label)], editable: true });
+      calendarEvents[result.id] = { title: label, type };
+    } catch (err) {
+      showStatus('Failed to create event: ' + err.message, true);
+      const tempEvent = calendar.getEventById(tempId);
+      if (tempEvent) tempEvent.remove();
+      addChipToSidebar(type, label);
+    }
+  }
+
+  function createChipElement(type, label) {
+    const el = document.createElement('div');
+    el.className = `chip ${getChipClass(type)}`;
+    el.textContent = label;
+    el.setAttribute('draggable', 'true');
+    el.dataset.type = type;
+    el.dataset.label = label;
+
+    // Desktop drag
+    el.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', JSON.stringify({ type, label }));
+      e.dataTransfer.effectAllowed = 'move';
+      el.style.opacity = '0.5';
+    });
+
+    el.addEventListener('dragend', () => {
+      el.style.opacity = '1';
+      clearDropTarget();
+    });
+
+    // Touch drag
+    el.addEventListener('touchstart', (e) => {
+      handleTouchStart(e, type, label, el);
+    }, { passive: true });
+
+    return el;
+  }
+
+  function addChipToSidebar(type, label) {
+    const container = getChipContainer(type);
+    const el = createChipElement(type, label);
+    container.appendChild(el);
+    sidebarChips.push({ type, label, el });
+    bumpCount(type);
+    updateCounts();
+  }
+
+  function removeChipFromSidebar(type, label) {
+    const idx = sidebarChips.findIndex(c => c.type === type && c.label === label);
+    if (idx === -1) return;
+    const chip = sidebarChips[idx];
+    chip.el.style.transform = 'scale(0.5)';
+    chip.el.style.opacity = '0';
+    setTimeout(() => chip.el.remove(), 200);
+    sidebarChips.splice(idx, 1);
+    bumpCount(type);
+    updateCounts();
+  }
+
+  function titleToType(title) {
+    if (title === 'PTO') return 'pto';
+    if (title === 'Floating Holiday') return 'floating';
+    return 'holiday';
+  }
+
+  function clearDropTarget() {
+    if (lastDropTarget) {
+      lastDropTarget.classList.remove('drop-target');
+      lastDropTarget = null;
+    }
+  }
+
+  // ─── Build sidebar / pools ─────────────────
+  function clearSidebar() {
+    // Clear both desktop and mobile containers
+    for (const prefix of ['chips-', 'm-chips-']) {
+      for (const pool of ['pto', 'floating', 'holiday']) {
+        const el = document.getElementById(prefix + pool);
+        if (el) el.innerHTML = '';
+      }
+    }
+    sidebarChips = [];
+    calendarEvents = {};
+    updateCounts();
+  }
+
+  function buildSidebar() {
+    if (config.calendar_mode === 'google') {
+      document.getElementById('mode-label').textContent = 'Google Calendar';
+    }
+
+    for (let i = 0; i < config.pto_days; i++) addChipToSidebar('pto', 'PTO');
+    for (let i = 0; i < config.floating_holidays; i++) addChipToSidebar('floating', 'Floating Holiday');
+    for (const h of config.company_holidays) addChipToSidebar('holiday', h.name);
+  }
+
+  // ─── Calendar ─────────────────────────────
+  async function loadEvents() {
+    let events;
+    try {
+      events = await apiCall('GET', '/events');
+    } catch (e) {
+      showStatus('Running in offline mode — events will not persist.', true);
+      return;
+    }
+
+    for (const ev of events) {
+      const type = titleToType(ev.title);
+      removeChipFromSidebar(type, ev.title);
+      calendarEvents[ev.id] = { title: ev.title, type };
+
+      calendar.addEvent({
+        id: ev.id, title: ev.title, start: ev.date, allDay: true,
+        classNames: [getEventClass(ev.title)], editable: true,
+      });
+    }
+  }
+
+  function initCalendar() {
+    const calendarEl = document.getElementById('calendar');
+    const year = config.year;
+
+    if (calendar) calendar.destroy();
+
+    calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: 'dayGridMonth',
+      initialDate: `${year}-01-01`,
+      validRange: { start: `${year}-01-01`, end: `${year + 1}-01-01` },
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth'
+      },
+      editable: true,
+      droppable: false,
+      eventClick: handleEventClick,
+      eventDrop: handleEventDrop,
+      height: 'auto',
+      dayMaxEvents: 3,
+      fixedWeekCount: false,
+    });
+
+    calendar.render();
+
+    calendarEl.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      const dateCell = e.target.closest('[data-date]');
+      if (dateCell && dateCell !== lastDropTarget) {
+        clearDropTarget();
+        dateCell.classList.add('drop-target');
+        lastDropTarget = dateCell;
+      }
+    });
+
+    calendarEl.addEventListener('dragleave', (e) => {
+      const dateCell = e.target.closest('[data-date]');
+      if (dateCell && !dateCell.contains(e.relatedTarget)) {
+        dateCell.classList.remove('drop-target');
+        if (lastDropTarget === dateCell) lastDropTarget = null;
+      }
+    });
+
+    calendarEl.addEventListener('drop', handleCalendarDrop);
+  }
+
+  async function handleCalendarDrop(e) {
+    e.preventDefault();
+    clearDropTarget();
+
+    let data;
+    try { data = JSON.parse(e.dataTransfer.getData('text/plain')); } catch { return; }
+
+    const dateCell = e.target.closest('[data-date]');
+    if (!dateCell) return;
+    const date = dateCell.getAttribute('data-date');
+    if (!date) return;
+
+    const { type, label } = data;
+    removeChipFromSidebar(type, label);
+
+    const tempId = 'temp-' + Date.now();
+    calendar.addEvent({ id: tempId, title: label, start: date, allDay: true, classNames: [getEventClass(label)], editable: true });
+
+    try {
+      const result = await apiCall('POST', '/events', { title: label, date });
+      const tempEvent = calendar.getEventById(tempId);
+      if (tempEvent) tempEvent.remove();
+      calendar.addEvent({ id: result.id, title: label, start: date, allDay: true, classNames: [getEventClass(label)], editable: true });
+      calendarEvents[result.id] = { title: label, type };
+    } catch (err) {
+      showStatus('Failed to create event: ' + err.message, true);
+      const tempEvent = calendar.getEventById(tempId);
+      if (tempEvent) tempEvent.remove();
+      addChipToSidebar(type, label);
+    }
+  }
+
+  async function handleEventClick(info) {
+    const eventId = info.event.id;
+    if (eventId.startsWith('temp-')) return;
+    const meta = calendarEvents[eventId];
+    if (!meta) return;
+
+    info.event.remove();
+
+    try {
+      await apiCall('DELETE', `/events/${eventId}`);
+      addChipToSidebar(meta.type, meta.title);
+      delete calendarEvents[eventId];
+    } catch (err) {
+      showStatus('Failed to remove event: ' + err.message, true);
+      calendar.addEvent({ id: eventId, title: meta.title, start: info.event.startStr, allDay: true, classNames: [getEventClass(meta.title)], editable: true });
+    }
+  }
+
+  async function handleEventDrop(info) {
+    const eventId = info.event.id;
+    if (eventId.startsWith('temp-')) return;
+    try {
+      await apiCall('PUT', `/events/${eventId}`, { date: info.event.startStr });
+    } catch (err) {
+      showStatus('Failed to move event: ' + err.message, true);
+      info.revert();
+    }
+  }
+
+  // ─── Reload ────────────────────────────────
+  async function reloadAll() {
+    clearSidebar();
+    buildSidebar();
+    initCalendar();
+    await loadEvents();
+  }
+
+  // ─── Init ──────────────────────────────────
+  async function init() {
+    try {
+      config = await apiCall('GET', '/config');
+    } catch {
+      config = {
+        year: new Date().getFullYear(),
+        min_year: new Date().getFullYear() - 5,
+        max_year: new Date().getFullYear() + 10,
+        pto_days: 15,
+        floating_holidays: 5,
+        calendar_mode: 'local',
+        company_holidays: [
+          { name: "New Year's Day", date: "2026-01-01" },
+          { name: "Memorial Day", date: "2026-05-25" },
+          { name: "Independence Day", date: "2026-07-03" },
+          { name: "Labor Day", date: "2026-09-07" },
+          { name: "Thanksgiving", date: "2026-11-26" },
+          { name: "Day after Thanksgiving", date: "2026-11-27" },
+          { name: "Christmas", date: "2026-12-25" },
+        ],
+        company_holidays_raw: [
+          { name: "New Year's Day", date: "01-01" },
+          { name: "Memorial Day", date: "05-25" },
+          { name: "Independence Day", date: "07-03" },
+          { name: "Labor Day", date: "09-07" },
+          { name: "Thanksgiving", date: "11-26" },
+          { name: "Day after Thanksgiving", date: "11-27" },
+          { name: "Christmas", date: "12-25" },
+        ],
+      };
+    }
+    buildYearSelect();
+    buildSidebar();
+    initCalendar();
+    await loadEvents();
+  }
+
+  init();
+})();
+</script>
+
+</body>
+</html>
